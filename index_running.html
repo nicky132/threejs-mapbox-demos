@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>threemap</title>
+  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/mapbox-gl/2.1.1/mapbox-gl.css'>
+  <link rel="stylesheet" href="./style.css">
+  <script src="css/fontawesome.js"></script>
+	<link href="css/free.min.css" rel="stylesheet" />
+	<link href="css/free-v4-font-face-min.css" rel="stylesheet" />
+	<link href="css/free-v4-shims.min.css" rel="stylesheet" />
+  <style>
+    body, html {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			background: black;
+		}
+
+		#map {
+			width: 100%;
+			height: 100%;
+		}
+
+		#explainer {
+			z-index: 99;
+		}
+
+		.top-right-tools {
+			display: flex;
+			right: 40px;
+			z-index: 10;
+		}
+
+		.tools-i.mapboxgl-ctrl {
+			margin: 10px 20px 0 0;
+			display: inline-flex;
+		}
+
+		.helpDiv {
+			width: auto;
+			left: 50%;
+			top: 0px;
+			z-index: 2;
+			position: absolute;
+		}
+
+		.help {
+			background: rgba(0, 0, 0, 0.5);
+			color: #fff;
+			position: relative;
+			text-align: center;
+			top: 10px;
+			left: -50%;
+			padding: 5px 10px;
+			margin: 0;
+			font-size: 11px;
+			line-height: 18px;
+			border-radius: 3px;
+			z-index: 1;
+			display: block;
+		}
+
+		/*these 3 clases will provide mapbox-like style for labels*/
+		.toolTip {
+			border: 0.5px black solid;
+			display: inline-block;
+			background: white;
+			padding: 1px 6px;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			font-size: 11px !important;
+		}
+
+		.marker {
+			max-width: 240px;
+			display: flex;
+			margin-bottom: 5em;
+			text-align: center;
+		}
+
+		.mapboxgl-popup-tip {
+			margin-top: -1px;
+		}
+    /* threemap css */
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+
+    .helpDiv {
+      width: auto;
+      left: 50%;
+      top: 0px;
+      z-index: 2;
+      position: absolute;
+    }
+
+    .help {
+      background: rgba(0, 0, 0, 0.5);
+      color: #fff;
+      position: relative;
+      text-align: center;
+      top: 10px;
+      left: -50%;
+      padding: 5px 10px;
+      margin: 0;
+      font-size: 11px;
+      line-height: 18px;
+      border-radius: 3px;
+      z-index: 1;
+      display: block;
+    }
+
+    /*these 3 clases will provide mapbox-like style for labels*/
+    .toolTip {
+      border: 0.5px black solid;
+      display: inline-block;
+      background: white;
+      padding: 1px 6px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 11px !important;
+    }
+
+    .marker {
+      max-width: 240px;
+      display: flex;
+      margin-bottom: 5em;
+      text-align: center;
+      color: black;
+    }
+
+    .mapboxgl-popup-tip {
+      margin-top: -1px;
+    }
+
+    .top-right-tools {
+      display: flex;
+      right: 40px;
+      z-index: 10;
+    }
+
+    .tools-i.mapboxgl-ctrl {
+      margin: 10px 20px 0 0;
+      display: inline-flex;
+    }
+
+    #toolsControl {
+      margin: 10px 20px 0 0;
+      display: inline-flex;
+    }
+
+    #toolsControl.mapboxgl-ctrl-group button + button, #toolsControl.mapboxgl-ctrl-group div + div {
+      border-left: 1px solid #ddd;
+      border-top: 0px;
+    }
+  </style>
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<div id="map">
+  <div class="mapboxgl-ctrl-top-right top-right-tools" aria-label="Map Tools Control">
+    <div class="tools-i mapboxgl-ctrl mapboxgl-ctrl-group">
+      <button type="button" name="wireButton" id="wireButton" title="Wireframe/Texture selected item [W]" alt="Wireframe/Texture selected item [W]" disabled><i class="fas fa-border-none"></i></button>
+      <button type="button" name="playButton" id="playButton" title="Play/Pause animations" alt="Play/Pause animations" disabled><i class="fas fa-play"></i></button>
+    </div>
+  </div>
+  <div class="mapboxgl-ctrl helpDiv">
+    <div id="help" class="help">
+      Add or Select an object
+    </div>
+  </div>
+</div>
+<!-- partial -->
+<script src='https://cdnjs.cloudflare.com/ajax/libs/mapbox-gl/2.2.0/mapbox-gl.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r126/three.min.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.8.0/suncalc.min.js'></script>
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
+<script src="threebox.min.js"></script>
+<!-- <script  src="./script.js"></script> -->
+<script type="module">
+  mapboxgl.accessToken = 'pk.eyJ1IjoieGlhb3poYW5naiIsImEiOiJjbDVwNm9zN2owdTgxM2RuemVobm51Nzd3In0.8qLyL04Wpoir1_YutPa7kw';
+  // var origin = [-122.47920912, 37.716351775];
+  // var origin = [139.7670, 35.6814];
+  var origin = [120.210792,30.246026];
+  var destination, line;
+  var soldier;
+  var map = new mapboxgl.Map({
+    container: 'map',
+    zoom: 14,
+    // center: [139.7670, 35.6814],
+    // pitch: 30,
+    style: 'mapbox://styles/mapbox/streets-v10',
+    center: origin,
+    zoom: 18,
+    pitch: 60,
+    antialias: true,
+    bearing: 0
+  });
+  map.addControl(new mapboxgl.NavigationControl());
+  let stats;
+  import Stats from 'https://threejs.org/examples/jsm/libs/stats.module.js';
+  function animate() {
+    requestAnimationFrame(animate);
+    stats.update();
+  }
+  const mouse = new THREE.Vector4(-1000, -1000, 1, 1);
+
+  // parameters to ensure the model is georeferenced correctly on the map
+  var modelOrigin = [139.7670, 35.6814];
+  var modelAltitude = 150;
+
+  var modelAsMercatorCoordinate = mapboxgl.MercatorCoordinate.fromLngLat(
+    modelOrigin,
+    modelAltitude
+  );
+
+  // transformation parameters to position, rotate and scale the 3D model onto the map
+  var modelTransform = {
+    translateX: modelAsMercatorCoordinate.x,
+    translateY: modelAsMercatorCoordinate.y,
+    translateZ: modelAsMercatorCoordinate.z,
+    /* Since our 3D model is in real world meters, a scale transform needs to be
+    * applied since the CustomLayerInterface expects units in MercatorCoordinates.
+    */
+    scale: modelAsMercatorCoordinate.meterInMercatorCoordinateUnits()
+  };
+
+  // configuration of the custom layer for a 3D model per the CustomLayerInterface
+  var customLayer = {
+    id: '3d-model',
+    type: 'custom',
+    renderingMode: '3d',
+    onAdd: function(map, gl) {
+      this.camera = new THREE.PerspectiveCamera();
+      this.scene = new THREE.Scene();
+      var cube = new THREE.Mesh(
+        new THREE.BoxGeometry( 300, 300, 300 ),
+          new THREE.MeshNormalMaterial()
+      );
+      this.scene.add(cube)
+      let cube1 = cube.clone();
+      cube1.material = new THREE.MeshNormalMaterial();
+      cube1.translateX(1000);
+      this.scene.add(cube1)
+
+      this.map = map;
+
+      // use the Mapbox GL JS map canvas for three.js
+      this.renderer = new THREE.WebGLRenderer({
+        canvas: map.getCanvas(),
+        context: gl,
+        antialias: true
+      });
+
+      this.renderer.autoClear = false;
+      this.raycaster = new THREE.Raycaster();
+      //threemap
+      window.tb = new Threebox(
+        map,
+        gl,
+        {
+          defaultLights: true,
+          enableSelectingFeatures: true,
+          enableSelectingObjects: true,
+          enableDraggingObjects: true,
+          enableRotatingObjects: true,
+          enableTooltips: true
+        }
+      );
+      
+      var options = {
+        obj: 'models/Soldier.glb',
+        type: 'gltf',
+        scale: 20,
+        units: 'meters',
+        rotation: { x: 90, y: 0, z: 0 },
+        anchor: 'center'//default rotation
+      }
+
+      tb.loadObj(options, (model) => {
+        soldier = model.setCoords(origin);
+        // Listening to the events
+        soldier.addEventListener('SelectedChange', onSelectedChange, false);
+        soldier.addEventListener('Wireframed', onWireframed, false);
+        soldier.addEventListener('IsPlayingChanged', onIsPlayingChanged, false);
+        soldier.addEventListener('ObjectDragged', onDraggedObject, false);
+        soldier.addEventListener('ObjectMouseOver', onObjectMouseOver, false);
+        soldier.addEventListener('ObjectMouseOut', onObjectMouseOut, false);
+        soldier.addEventListener('ObjectChanged', onObjectChanged, false);
+        tb.add(soldier);
+      })
+    },
+    render: function(gl, matrix) {
+      var m = new THREE.Matrix4().fromArray(matrix);
+      var l = new THREE.Matrix4()
+        .makeTranslation(
+          modelTransform.translateX,
+          modelTransform.translateY,
+          modelTransform.translateZ
+        )
+        .scale(
+          new THREE.Vector3(
+            modelTransform.scale,
+            -modelTransform.scale,
+            modelTransform.scale
+          )
+        );
+      
+      this.camera.projectionMatrix = m.clone().multiply(l);
+      this.camera.matrixWorldInverse = new THREE.Matrix4();
+      this.renderer.resetState();
+
+      const freeCamera = this.map.getFreeCameraOptions();
+      let cameraPosition = new THREE.Vector4(freeCamera.position.x, freeCamera.position.y, freeCamera.position.z, 1);
+      cameraPosition.applyMatrix4(l.invert());
+      let direction = mouse.clone().applyMatrix4(this.camera.projectionMatrix.clone().invert());
+      direction.divideScalar(direction.w);
+      this.raycaster.set(cameraPosition, direction.sub(cameraPosition).normalize());
+
+      const intersects = this.raycaster.intersectObjects( this.scene.children );
+      console.log('Intersection count:', intersects.length)
+
+      for ( let i = 0; i < intersects.length; i ++ ) {
+        intersects[ i ].object.material.wireframe = true;
+      }
+      
+      this.renderer.render(this.scene, this.camera);
+
+      for ( let i = 0; i < intersects.length; i ++ ) {
+        intersects[ i ].object.material.wireframe = false;
+      }
+
+      //threemap
+      tb.update();
+    }
+  };
+
+  map.on('load', function() {
+    // stats
+    stats = new Stats();
+    map.getContainer().appendChild(stats.dom);
+    animate();
+
+    map.addLayer(customLayer);
+    
+    map.on('mousemove', function (event) {
+      mouse.x = ( event.point.x / window.innerWidth ) * 2 - 1;
+      mouse.y = - ( event.point.y / window.innerHeight ) * 2 + 1;
+      map.triggerRepaint();
+    });
+  }).on('click', function (e) {
+			var pt = [e.lngLat.lng, e.lngLat.lat];
+			travelPath(pt);
+	})
+
+  function travelPath(destination) {
+    // request directions. See https://docs.mapbox.com/api/navigation/#directions for details
+    var url = "https://api.mapbox.com/directions/v5/mapbox/driving/" + [origin, destination].join(';') + "?geometries=geojson&access_token=" + 'pk.eyJ1IjoieGlhb3poYW5naiIsImEiOiJjbDVwNm9zN2owdTgxM2RuemVobm51Nzd3In0.8qLyL04Wpoir1_YutPa7kw'
+
+    fetchFunction(url, function (data) {
+      let duration = 10000;
+      // extract path geometry from callback geojson, and set duration of travel
+      var options = {
+        animation: 1,
+        path: data.routes[0].geometry.coordinates,
+        duration: duration
+      }
+      // start the soldier animation with above options, and remove the line when animation ends
+      soldier.followPath(
+        options,
+        function () {
+          tb.remove(line);
+        }
+      );
+      soldier.playAnimation(options);
+      // set up geometry for a line to be added to map, lofting it up a bit for *style*
+      var lineGeometry = options.path
+        .map(function (coordinate) {
+          return coordinate.concat([15])
+        })
+      // create and add line object
+      line = tb.line({
+        geometry: lineGeometry,
+        width: 5,
+        color: 'steelblue'
+      })
+      tb.add(line);
+      // set destination as the new origin, for the next trip
+      origin = destination;
+    })
+  }
+
+  function fetchFunction(url, cb) {
+    fetch(url)
+      .then(
+        function (response) {
+          if (response.status === 200) {
+            response.json()
+              .then(function (data) {
+                cb(data)
+              })
+          }
+        }
+      )
+  }
+
+  let selectedObject;
+  function onSelectedChange(e) {
+    let selected = e.detail.selected;
+    console.log("onSelectedChange: " + selected);
+    $('#wireButton')[0].disabled = !selected;
+    if (e.detail.hasDefaultAnimation) { $('#playButton')[0].disabled = !selected; }
+    if (selected) {
+      selectedObject = e.detail;
+      $('#help')[0].innerHTML = "Press 'Shift' to drag or ress 'Alt' to rotate <br>\ Tap 'Wireframe' or 'Play' buttons ";
+    }
+    else {
+      $('#help')[0].innerHTML = "Add or Select an object";
+    }
+    tb.update();
+    map.repaint = true;
+  }
+
+  function onWireframed(e) {
+			if (e.detail.wireframe) {
+				$('#wireButton').children(".fas").removeClass("fa-border-none").addClass("fa-border-all");
+			}
+			else {
+				$('#wireButton').children(".fas").removeClass("fa-border-all").addClass("fa-border-none");
+			}
+			console.log("onWireframed: " + e.detail.wireframe);
+			tb.update();
+			map.repaint = true;
+		}
+
+		function onIsPlayingChanged(e) {
+			if (e.detail.isPlaying) {
+				$('#playButton').children(".fas").removeClass("fa-play").addClass("fa-pause");
+			}
+			else {
+				$('#playButton').children(".fas").removeClass("fa-pause").addClass("fa-play");
+			}
+		}
+		function onDraggedObject(e) {
+			let draggedObject = e.detail.draggedObject;
+			let draggedAction = e.detail.draggedAction;
+			console.log("onDraggedObject" + draggedAction);
+		}
+		function onObjectMouseOver(e) {
+			console.log("onObjectMouseOver");
+		}
+		function onObjectMouseOut(e) {
+			console.log("onObjectMouseOut");
+		}
+		function onObjectChanged(e) {
+			let model = e.detail.object; //here's the object already modified
+			let action = e.detail.action; //here's the action that changed the object
+			console.log(action);
+		}
+</script>
+</body>
+</html>
